@@ -124,6 +124,7 @@ tf_kernel_library(
         "//tensorflow/core:framework",
         "//tensorflow/core:lib",
         "//tensorflow/core:lib_internal",
+        "//tensorflow/core:metrics",
         "//tensorflow/core/kernels:inplace_ops",
         "//tensorflow/core/kernels/data:captured_function",
         "//tensorflow/core/kernels/data:dataset_utils",
@@ -133,6 +134,18 @@ tf_kernel_library(
 tf_kernel_library(
     name = "matching_files_dataset_op",
     srcs = ["matching_files_dataset_op.cc"],
+    deps = [
+        "//tensorflow/core:experimental_dataset_ops_op_lib",
+        "//tensorflow/core:framework",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:lib_internal",
+        "//tensorflow/core/kernels/data:dataset",
+    ],
+)
+
+tf_kernel_library(
+    name = "choose_fastest_dataset_op",
+    srcs = ["choose_fastest_dataset_op.cc"],
     deps = [
         "//tensorflow/core:experimental_dataset_ops_op_lib",
         "//tensorflow/core:framework",
@@ -294,6 +307,20 @@ tf_kernel_library(
 )
 
 tf_kernel_library(
+    name = "take_while_dataset_op",
+    srcs = ["take_while_dataset_op.cc"],
+    deps = [
+        "//tensorflow/core:core_cpu_internal",
+        "//tensorflow/core:dataset_ops_op_lib",
+        "//tensorflow/core:framework",
+        "//tensorflow/core:lib",
+        "//tensorflow/core:lib_internal",
+        "//tensorflow/core/kernels/data:captured_function",
+        "//tensorflow/core/kernels/data:dataset_utils",
+    ],
+)
+
+tf_kernel_library(
     name = "to_tf_record_op",
     srcs = ["to_tf_record_op.cc"],
     deps = [
@@ -342,6 +369,7 @@ tf_kernel_library(
     name = "dataset_kernels",
     deps = [
         ":assert_next_dataset_op",
+        ":choose_fastest_dataset_op",
         ":csv_dataset_op",
         ":dense_to_sparse_batch_dataset_op",
         ":directed_interleave_dataset_op",
@@ -365,6 +393,7 @@ tf_kernel_library(
         ":sql_dataset_op",
         ":stats_aggregator_ops",
         ":stats_dataset_ops",
+        ":take_while_dataset_op",
         ":threadpool_dataset_op",
         ":to_tf_record_op",
         ":unbatch_dataset_op",

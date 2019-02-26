@@ -378,6 +378,7 @@ ShapeUtil::MakeShapeWithDescendingLayoutAndSamePhysicalLayout(
     case U32:
     case U64:
     case C64:
+    case C128:
     case TUPLE:
     case OPAQUE:
     case TOKEN:
@@ -529,7 +530,8 @@ ShapeUtil::MakeShapeWithDescendingLayoutAndSamePhysicalLayout(
   string result = StrCat(
       primitive_util::LowercasePrimitiveTypeName(shape.element_type()), "[");
   for (int i = 0; i < shape.dimensions().size(); i++) {
-    StrAppend(&result, (i > 0) ? "," : "", shape.dimensions(i));
+    StrAppend(&result, (i > 0) ? "," : "",
+              shape.is_dynamic_dimension(i) ? "<=" : "", shape.dimensions(i));
   }
   result += "]";
   if (!IsScalar(shape) && shape.IsArray()) {
@@ -639,6 +641,8 @@ ShapeUtil::MakeShapeWithDescendingLayoutAndSamePhysicalLayout(
       return sizeof(double);
     case C64:
       return sizeof(complex64);
+    case C128:
+      return sizeof(complex128);
     case TOKEN:
       // Tokens require no space.
       return 0;

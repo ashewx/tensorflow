@@ -34,6 +34,7 @@ from tensorflow.python.distribute import cross_device_ops as cross_device_ops_li
 from tensorflow.python.distribute import device_util
 from tensorflow.python.distribute import distribute_lib
 from tensorflow.python.distribute import input_lib
+from tensorflow.python.distribute import numpy_dataset
 from tensorflow.python.distribute import reduce_util
 from tensorflow.python.distribute import values
 from tensorflow.python.distribute.cluster_resolver import tpu_cluster_resolver as resolver_lib
@@ -294,7 +295,6 @@ class TPUExtended(distribute_lib.DistributionStrategyExtended):
 
   def _make_dataset_iterator(self, dataset):
     """Make iterators for each of the TPU hosts."""
-
     return input_lib.DatasetIterator(dataset, self._input_workers,
                                      self._num_replicas_in_sync)
 
@@ -302,6 +302,25 @@ class TPUExtended(distribute_lib.DistributionStrategyExtended):
     return input_lib.MultiWorkerDataset(
         functools.partial(self._call_dataset_fn, dataset_fn),
         self._input_workers)
+
+  def _make_input_fn_iterator(
+      self,
+      input_fn,
+      replication_mode=distribute_lib.InputReplicationMode.PER_WORKER):
+    input_contexts = []
+    num_workers = self._input_workers.num_workers
+    for i in range(num_workers):
+      input_contexts.append(distribute_lib.InputContext(
+          num_input_pipelines=num_workers,
+          input_pipeline_id=i,
+          num_replicas_in_sync=self._num_replicas_in_sync))
+    return input_lib.InputFunctionIterator(
+        input_fn, self._input_workers, input_contexts)
+
+  def _experimental_make_numpy_dataset(self, numpy_input, session):
+    return numpy_dataset.one_host_numpy_dataset(
+        numpy_input, numpy_dataset.SingleDevice(self.get_host_cpu_device(0)),
+        session)
 
   # TODO(priyag): Deal with OutOfRange errors once b/111349762 is fixed.
   # TODO(sourabhbajaj): Remove the initial_loop_values parameter when we have
@@ -466,6 +485,9 @@ class TPUExtended(distribute_lib.DistributionStrategyExtended):
     if colocate_with is None:
       device_map = self._device_map
       logical_device = 0  # TODO(josh11b): Get logical device from scope here.
+    elif isinstance(colocate_with, numpy_dataset.SingleDevice):
+      with ops.device(colocate_with.device):
+        return next_creator(*args, **kwargs)
     else:
       device_map = colocate_with.device_map
       logical_device = colocate_with.logical_device
@@ -658,6 +680,14 @@ class TPUExtended(distribute_lib.DistributionStrategyExtended):
   # TODO(priyag): Delete this once all strategies use global batch size.
   @property
   def _global_batch_size(self):
+    """`make_dataset_iterator` and `make_numpy_iterator` use global batch size.
+
+    `distribute_dataset` and `make_input_fn_iterator` assume per-replica
+    batching.
+
+    Returns:
+      Boolean.
+    """
     return True
 
 

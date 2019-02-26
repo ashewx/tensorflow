@@ -232,6 +232,7 @@ def generated_test_models():
         "constant",
         "control_dep",
         "conv",
+        "conv2d_transpose",
         "conv_with_shared_weights",
         "conv_to_depthwiseconv_with_shared_weights",
         "depthwiseconv",
@@ -262,7 +263,7 @@ def generated_test_models():
         "logical_and",
         "logical_or",
         "logical_xor",
-        "lstm",
+        #"lstm", TODO(b/122889684): Resolve toco structured line parsing in oss.
         "max_pool",
         "maximum",
         "mean",
