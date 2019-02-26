@@ -128,6 +128,12 @@ class Controller(object):
     for node in metagraph.graph_def.node:
       if node.name in self.important_op_names:
         node.device = self.get_node_by_name(node.name).device
+        print(node.name + ' = ' + node.device + '\n')
+
+  def print_placement(self, metagraph):
+    for node in metagraph.graph_def.node:
+      if node.name in self.important_op_names:
+        print(node.name + ' = ' + self.get_node_by_name(node.name).device + '\n')
 
   # Get the nodes in the immediate fanin of node.
   # Beware: this doesn't take into account the nodes that may be skipped

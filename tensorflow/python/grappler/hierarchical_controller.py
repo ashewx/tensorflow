@@ -956,6 +956,7 @@ class HierarchicalController(Controller):
     actions = actions[child_id]
     if verbose:
       global_step = sess.run(self.global_step)
+      print(global_step)
       if global_step % 100 == 0:
         log_string = "op group assignments: "
         for a in grouping_actions:
@@ -1019,8 +1020,9 @@ class HierarchicalController(Controller):
         controller_ops["grad_norm"], controller_ops["grad_norms"],
         controller_ops["train_op"]
     ]
-    sess.run(run_ops)
-    sess.run(controller_ops["baseline_update"])
+    _, _, _, _, _ = sess.run(run_ops)
+    sum, _ = sess.run([controller_ops["summary"], controller_ops["baseline_update"]])
+    return sum
 
   def _get_train_ops(self,
                      loss,

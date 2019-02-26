@@ -19,6 +19,7 @@ from __future__ import division
 from __future__ import print_function
 
 import time
+import tensorflow as tf
 from tensorflow.core.protobuf import config_pb2
 from tensorflow.core.protobuf import meta_graph_pb2
 from tensorflow.python.framework import errors
@@ -28,6 +29,7 @@ from tensorflow.python.grappler import hierarchical_controller
 from tensorflow.python.grappler import item as gitem
 from tensorflow.python.grappler import tf_optimizer
 from tensorflow.python.training import training
+import pprint
 
 
 def PlaceGraph(metagraph,
@@ -54,7 +56,7 @@ def PlaceGraph(metagraph,
     cluster = gcluster.Cluster()
 
   # Optimize the metagraph to speedup the placement
-  config = config_pb2.ConfigProto()
+  config = config_pb2.ConfigProto(log_device_placement=True)
   optimized_graph = tf_optimizer.OptimizeGraph(
       config, metagraph, verbose=verbose, cluster=cluster)
   optimized_metagraph = meta_graph_pb2.MetaGraphDef()
@@ -62,10 +64,12 @@ def PlaceGraph(metagraph,
   optimized_metagraph.graph_def.CopyFrom(optimized_graph)
 
   item = gitem.Item(optimized_metagraph)
+  pp = pprint.PrettyPrinter()
 
   # Measure the runtime achievable with the original placement.
   try:
     _, original_run_time, _ = cluster.MeasureCosts(item)
+    best_time = original_run_time
     if verbose:
       print("Runtime for original placement: " + str(original_run_time))
   except errors.OpError as e:
@@ -85,11 +89,15 @@ def PlaceGraph(metagraph,
       model = hierarchical_controller.HierarchicalController(
           hparams, item, cluster)
       ops = model.build_controller()
+      pp.pprint(ops)
       session_creator = training.ChiefSessionCreator()
       with training.MonitoredSession(session_creator=session_creator) as sess:
         start_time = time.time()
         current_time = start_time
+        writer = tf.summary.FileWriter('./graphs', sess.graph)
+        counter = 0
         while current_time - start_time < allotted_time:
+          counter += 1
           grouping_actions = model.generate_grouping(sess)
           input_to_seq2seq = model.create_group_embeddings(
               grouping_actions, verbose=verbose)
@@ -106,10 +114,13 @@ def PlaceGraph(metagraph,
           if updated and run_time < original_run_time:
             if verbose:
               print("Found better placement, with runtime " + str(run_time))
+            best_time = run_time
             model.export_placement(metagraph)
 
-          model.process_reward(sess)
-
+          summary = model.process_reward(sess)
+          writer.add_summary(summary, counter)
           current_time = time.time()
+    print("Original Runtime: " + str(original_run_time))
+    print("Best Runtime: " + str(best_time))
 
   return metagraph

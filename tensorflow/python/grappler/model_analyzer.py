@@ -22,7 +22,7 @@ from tensorflow.python import pywrap_tensorflow as tf_wrap
 from tensorflow.python.framework import errors
 
 
-def GenerateModelReport(metagraph, assume_valid_feeds=True, debug=False):
+def GenerateModelReport(metagraph, assume_valid_feeds=True, debug=True):
   """Report what's known statically about each node in the provided metagraph.
 
   Args:
