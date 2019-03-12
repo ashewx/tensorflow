@@ -52,6 +52,12 @@ def PlaceGraph(metagraph,
   Returns:
     The placed metagraph.
   """
+
+  if hparams is None:
+    hparams = hierarchical_controller.hierarchical_controller_hparams()
+  # We run with a single child
+  hparams.num_children = 1  
+
   if cluster is None:
     cluster = gcluster.Cluster()
 
@@ -76,11 +82,6 @@ def PlaceGraph(metagraph,
     if verbose:
       print("Original placement isn't feasible: " + str(e))
     original_run_time = hparams.failing_signal
-
-  if hparams is None:
-    hparams = hierarchical_controller.hierarchical_controller_hparams()
-  # We run with a single child
-  hparams.num_children = 1
 
   with tf_ops.Graph().as_default():
     # Place all the nodes of the controller on the CPU. We don't want them to
