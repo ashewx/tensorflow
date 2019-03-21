@@ -98,7 +98,6 @@ def PlaceGraph(metagraph,
         writer = tf.summary.FileWriter('./graphs', sess.graph)
         counter = 0
         while current_time - start_time < allotted_time:
-          counter += 1
           grouping_actions = model.generate_grouping(sess)
           input_to_seq2seq = model.create_group_embeddings(
               grouping_actions, verbose=verbose)
@@ -119,7 +118,9 @@ def PlaceGraph(metagraph,
             model.export_placement(metagraph)
 
           summary = model.process_reward(sess)
-          writer.add_summary(summary, counter)
+          gs = sess.run(model.global_step)
+          print(gs)
+          writer.add_summary(summary, gs)
           current_time = time.time()
         print("Original Runtime: " + str(original_run_time))
         print("Best Runtime: " + str(best_time))

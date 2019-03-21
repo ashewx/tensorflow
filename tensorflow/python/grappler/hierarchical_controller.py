@@ -956,7 +956,6 @@ class HierarchicalController(Controller):
     actions = actions[child_id]
     if verbose:
       global_step = sess.run(self.global_step)
-      print(global_step)
       if global_step % 100 == 0:
         log_string = "op group assignments: "
         for a in grouping_actions:
