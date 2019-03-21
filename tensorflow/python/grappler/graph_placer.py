@@ -29,6 +29,7 @@ from tensorflow.python.grappler import hierarchical_controller
 from tensorflow.python.grappler import item as gitem
 from tensorflow.python.grappler import tf_optimizer
 from tensorflow.python.training import training
+import numpy as np
 import pprint
 
 
@@ -56,7 +57,7 @@ def PlaceGraph(metagraph,
   if hparams is None:
     hparams = hierarchical_controller.hierarchical_controller_hparams()
   # We run with a single child
-  hparams.num_children = 1  
+  hparams.num_children = 1
 
   if cluster is None:
     cluster = gcluster.Cluster()
@@ -75,13 +76,13 @@ def PlaceGraph(metagraph,
   # Measure the runtime achievable with the original placement.
   try:
     _, original_run_time, _ = cluster.MeasureCosts(item)
-    best_time = original_run_time
     if verbose:
       print("Runtime for original placement: " + str(original_run_time))
   except errors.OpError as e:
     if verbose:
       print("Original placement isn't feasible: " + str(e))
     original_run_time = hparams.failing_signal
+  best_time = original_run_time
 
   with tf_ops.Graph().as_default():
     # Place all the nodes of the controller on the CPU. We don't want them to
@@ -91,8 +92,7 @@ def PlaceGraph(metagraph,
           hparams, item, cluster)
       ops = model.build_controller()
       pp.pprint(ops)
-      session_creator = training.ChiefSessionCreator()
-      with training.MonitoredSession(session_creator=session_creator) as sess:
+      with training.MonitoredTrainingSession(checkpoint_dir='./ckpt_dir', save_checkpoint_secs=5) as sess:
         start_time = time.time()
         current_time = start_time
         writer = tf.summary.FileWriter('./graphs', sess.graph)
@@ -112,7 +112,7 @@ def PlaceGraph(metagraph,
               print("Failed to run graph:" + str(e))
             run_time = hparams.failing_signal
           updated = model.update_reward(sess, run_time, verbose=verbose)
-          if updated and run_time < original_run_time:
+          if updated and run_time < best_time:
             if verbose:
               print("Found better placement, with runtime " + str(run_time))
             best_time = run_time
@@ -121,7 +121,8 @@ def PlaceGraph(metagraph,
           summary = model.process_reward(sess)
           writer.add_summary(summary, counter)
           current_time = time.time()
-    print("Original Runtime: " + str(original_run_time))
-    print("Best Runtime: " + str(best_time))
+        print("Original Runtime: " + str(original_run_time))
+        print("Best Runtime: " + str(best_time))
+        model.write_placement(metagraph)
 
   return metagraph

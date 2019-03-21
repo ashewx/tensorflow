@@ -135,6 +135,13 @@ class Controller(object):
       if node.name in self.important_op_names:
         print(node.name + ' = ' + self.get_node_by_name(node.name).device + '\n')
 
+  def write_placement(self, metagraph):
+    file = open("testfile.txt","w")
+    for node in metagraph.graph_def.node:
+      if node.name in self.important_op_names:
+        file.write(node.name + ' = ' + self.get_node_by_name(node.name).device + '\n')
+    file.close()
+
   # Get the nodes in the immediate fanin of node.
   # Beware: this doesn't take into account the nodes that may be skipped
   # since placement constraints force their placement.
