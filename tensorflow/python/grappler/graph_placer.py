@@ -30,6 +30,7 @@ from tensorflow.python.grappler import item as gitem
 from tensorflow.python.grappler import tf_optimizer
 from tensorflow.python.training import training
 import numpy as np
+import json
 import pprint
 
 
@@ -71,18 +72,26 @@ def PlaceGraph(metagraph,
   optimized_metagraph.graph_def.CopyFrom(optimized_graph)
 
   item = gitem.Item(optimized_metagraph)
+
   pp = pprint.PrettyPrinter()
 
-  # Measure the runtime achievable with the original placement.
   try:
-    _, original_run_time, _ = cluster.MeasureCosts(item)
-    if verbose:
-      print("Runtime for original placement: " + str(original_run_time))
-  except errors.OpError as e:
-    if verbose:
-      print("Original placement isn't feasible: " + str(e))
-    original_run_time = hparams.failing_signal
-  best_time = original_run_time
+    f = open('destFile.txt', 'r')
+    times = json.loads(f.read())
+    best_time = min(times)
+    original_run_time = times[0]
+  except FileNotFoundError:
+    # Measure the runtime achievable with the original placement.
+    try:
+      _, original_run_time, _ = cluster.MeasureCosts(item)
+      if verbose:
+        print("Runtime for original placement: " + str(original_run_time))
+    except errors.OpError as e:
+      if verbose:
+        print("Original placement isn't feasible: " + str(e))
+      original_run_time = hparams.failing_signal
+    best_time = original_run_time
+    times = [original_run_time]
 
   with tf_ops.Graph().as_default():
     # Place all the nodes of the controller on the CPU. We don't want them to
@@ -111,6 +120,7 @@ def PlaceGraph(metagraph,
               print("Failed to run graph:" + str(e))
             run_time = hparams.failing_signal
           updated = model.update_reward(sess, run_time, verbose=verbose)
+          times.append(run_time)
           if updated and run_time < best_time:
             if verbose:
               print("Found better placement, with runtime " + str(run_time))
@@ -125,5 +135,7 @@ def PlaceGraph(metagraph,
         print("Original Runtime: " + str(original_run_time))
         print("Best Runtime: " + str(best_time))
         model.write_placement(metagraph)
+        f = open('destFile.txt', 'w+')
+        f.write(json.dumps(times))
 
   return metagraph
