@@ -126,6 +126,7 @@ def PlaceGraph(metagraph,
               print("Found better placement, with runtime " + str(run_time))
             best_time = run_time
             model.export_placement(metagraph)
+            model.write_placement(metagraph, "bestPlace.txt")
 
           if updated and run_time >= max(times):
             model.write_placement(metagraph, "worstPlace.txt")
@@ -137,7 +138,6 @@ def PlaceGraph(metagraph,
           current_time = time.time()
         print("Original Runtime: " + str(original_run_time))
         print("Best Runtime: " + str(best_time))
-        model.write_placement(metagraph, "bestPlace.txt")
         f = open('times.txt', 'w+')
         f.write(json.dumps(times))
 
