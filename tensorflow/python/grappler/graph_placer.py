@@ -121,6 +121,9 @@ def PlaceGraph(metagraph,
             run_time = hparams.failing_signal
           updated = model.update_reward(sess, run_time, verbose=verbose)
           times.append(run_time)
+          f = open('times.txt', 'w+')
+          f.write(json.dumps(times))
+          f.close()
           if updated and run_time < best_time:
             if verbose:
               print("Found better placement, with runtime " + str(run_time))
@@ -138,7 +141,5 @@ def PlaceGraph(metagraph,
           current_time = time.time()
         print("Original Runtime: " + str(original_run_time))
         print("Best Runtime: " + str(best_time))
-        f = open('times.txt', 'w+')
-        f.write(json.dumps(times))
 
   return metagraph
