@@ -76,7 +76,7 @@ def PlaceGraph(metagraph,
   pp = pprint.PrettyPrinter()
 
   try:
-    f = open('destFile.txt', 'r')
+    f = open('times.txt', 'r')
     times = json.loads(f.read())
     best_time = min(times)
     original_run_time = times[0]
@@ -101,7 +101,7 @@ def PlaceGraph(metagraph,
           hparams, item, cluster)
       ops = model.build_controller()
       pp.pprint(ops)
-      with training.MonitoredTrainingSession(checkpoint_dir='./ckpt_dir', save_checkpoint_secs=5) as sess:
+      with training.MonitoredTrainingSession(master="grpc://localhost:2222", checkpoint_dir='./ckpt_dir', save_checkpoint_secs=5) as sess:
         start_time = time.time()
         current_time = start_time
         writer = tf.summary.FileWriter('./graphs', sess.graph)
@@ -127,6 +127,9 @@ def PlaceGraph(metagraph,
             best_time = run_time
             model.export_placement(metagraph)
 
+          if updated and run_time >= max(times):
+            model.write_placement(metagraph, "worstPlace.txt")
+
           summary = model.process_reward(sess)
           gs = sess.run(model.global_step)
           print(gs)
@@ -134,8 +137,8 @@ def PlaceGraph(metagraph,
           current_time = time.time()
         print("Original Runtime: " + str(original_run_time))
         print("Best Runtime: " + str(best_time))
-        model.write_placement(metagraph)
-        f = open('destFile.txt', 'w+')
+        model.write_placement(metagraph, "bestPlace.txt")
+        f = open('times.txt', 'w+')
         f.write(json.dumps(times))
 
   return metagraph

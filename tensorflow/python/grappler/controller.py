@@ -135,8 +135,8 @@ class Controller(object):
       if node.name in self.important_op_names:
         print(node.name + ' = ' + self.get_node_by_name(node.name).device + '\n')
 
-  def write_placement(self, metagraph):
-    file = open("testfile.txt","w")
+  def write_placement(self, metagraph, name):
+    file = open(name,"w")
     for node in metagraph.graph_def.node:
       if node.name in self.important_op_names:
         file.write(node.name + ' = ' + self.get_node_by_name(node.name).device + '\n')
